@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="GestaoLoja3D.Dominio/GestaoLoja3D.Dominio.csproj" />
+  <Project Path="GestaoLoja3D/GestaoLoja3D.csproj" />
+</Solution>
