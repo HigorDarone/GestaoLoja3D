@@ -11,7 +11,12 @@ namespace GestaoLoja3D.Dominio.Models
 
         public string Cor { get; private set; }
 
-        public string Marca { get; private set; }       
+        public string Marca { get; private set; }
+
+        public override string ObterDescricao()
+        {
+            return $"{TipoMaterial} {Cor} - {Marca}";
+        }
 
         public Filamento(string tipoMaterial, string cor, string marca, decimal quantidade, decimal valorTotal)
             : base(quantidade, valorTotal)
@@ -20,6 +25,8 @@ namespace GestaoLoja3D.Dominio.Models
             Cor = Validador.ValidarTexto(cor, "Cor");
             Marca = Validador.ValidarTexto(marca, "Marca");
         }
+
+        private Filamento() { }
 
     }
 }

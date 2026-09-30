@@ -47,5 +47,7 @@ namespace GestaoLoja3D.Dominio.Models
             TempoProducao = tempoProducao;
             QuantidadeEstoque = Validador.ValidarNumeroint(quantidadeEstoque, "Quantidade em Estoque");
         }
+
+        private Produto() { }
     }
 }

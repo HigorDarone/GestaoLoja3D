@@ -47,5 +47,12 @@ namespace GestaoLoja3D.Dominio.Models
             ValorTotal = Validador.ValidarNumeroDecimal(valorTotal, "Valor Total");
         }
 
+        public virtual string ObterDescricao()
+        {
+            return "item estoque";
+        }
+
+        protected ItemEstoque() { }
+        
     }
 }

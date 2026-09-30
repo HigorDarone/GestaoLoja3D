@@ -1,0 +1,156 @@
+@page "/produtos"
+@rendermode InteractiveServer
+
+@using GestaoLoja3D.Dominio.Data
+@using GestaoLoja3D.Dominio.Models
+@using Microsoft.EntityFrameworkCore
+@inject AppDbContext DbContext
+
+
+<h1>Produtos</h1>
+
+<h3>Novo produto</h3>
+
+<form>
+    <div class="mb-2">
+        <label>Nome</label>
+        <input class="form-control" @bind="nome" />
+    </div>
+    <div class="mb-2">
+        <label>Horas para produzir</label>
+        <input class="form-control" type="number" step="0.5" @bind="horasParaProduzir" />
+    </div>
+    <div class="mb-2">
+        <label>Quantidade em estoque</label>
+        <input class="form-control" type="number" @bind="quantidadeEmEstoque" />
+    </div>
+    <button class="btn btn-primary" type="button" @onclick="SalvarProduto">Salvar</button>
+</form>
+@if (!string.IsNullOrEmpty(mensagemErro))
+{
+	<div class="alert alert-danger mt-2">@mensagemErro</div>
+}
+
+<hr />
+
+<h3>Produtos cadastrados</h3>
+@foreach (var produto in listaProdutos)
+{
+    <div class="card mb-3 p-3">
+        <h4>@produto.Nome</h4>
+        <p>Tempo de produção: @produto.TempoProducao | Estoque: @produto.QuantidadeEstoque</p>
+        <p><strong>Valor total de fabricação: R$ @produto.ValorTotalDeFabricao().ToString("F2")</strong></p>
+        <h5>Materiais utilizados</h5>
+        <ul>
+            @foreach (var material in produto.MateriaisUtilizados)
+            {
+                <li>@material.Material.ObterDescricao() - Quantidade: @material.QuantidadeUtilizada - Custo: @((material.Material.ValorPorUnidade() * material.QuantidadeUtilizada).ToString("C"))</li>
+            }
+        </ul>
+        <h6>Adicionar material</h6>
+        <div class="row g-2 align-items-end">
+            <div class="col-auto">
+                <label>Tipo</label>
+                <select class="form-select" @onchange="e => tipoSelecionado[produto.Id] = e.Value?.ToString() ?? string.Empty">
+                    <option value="">Selecione...</option>
+                    <option value="Filamento">Filamento</option>
+                    <option value="Insumo">Insumo</option>                  
+                    
+                </select>
+            </div>
+            <div class="col-auto">
+                <label>Item</label>
+                <select class="form-select" @onchange="e => SelecionarItem(produto.Id, e)">
+                    <option value="0">Selecione...</option>
+                    @foreach (var item in ObterItensDisponiveis(produto.Id))
+                    {
+                        <option value="@item.Id">@item.ObterDescricao() (@item.QuantidadeDisponivel disponível)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-auto">
+                <label>Quantidade usada</label>
+                <input type="number" step="0.01" class="form-control" @onchange="e => Quantidadesele(produto.Id, e)" />
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-secondary" type="button">Adicionar</button>
+            </div>
+        </div>
+    </div>
+}
+@code
+{
+    string nome;
+    double horasParaProduzir;
+    int quantidadeEmEstoque;
+
+    string mensagemErro;
+
+    private List<Produto> listaProdutos = new List<Produto>();
+
+    private List<Filamento> filamentosDisponiveis = new List<Filamento>();
+
+    private List<Insumo> insumosDisponiveis = new List<Insumo>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        listaProdutos = await DbContext.Produtos.Include(p => p.MateriaisUtilizados).ThenInclude(m => m.Material).ToListAsync();
+        filamentosDisponiveis = await DbContext.Filamentos.Where(a => a.QuantidadeDisponivel > 0).ToListAsync();
+        insumosDisponiveis = await DbContext.Insumos.Where(a => a.QuantidadeDisponivel > 0).ToListAsync();
+    }
+
+
+    private async Task SalvarProduto()
+    {
+        try
+        {
+            mensagemErro = string.Empty;
+
+            var novoProduto = new Produto(nome, TimeSpan.FromHours(horasParaProduzir), quantidadeEmEstoque);
+            DbContext.Produtos.Add(novoProduto);
+            await DbContext.SaveChangesAsync();
+
+            listaProdutos = await DbContext.Produtos.Include(p => p.MateriaisUtilizados).ThenInclude(m => m.Material).ToListAsync();
+
+            nome = string.Empty;
+            horasParaProduzir = 0;
+            quantidadeEmEstoque = 0;
+
+        }
+        catch (ArgumentException ex)
+        {
+            mensagemErro = $"Erro ao salvar o produto: {ex.Message}";
+        }
+    }
+
+    private Dictionary<int, string> tipoSelecionado = new();
+    private Dictionary<int, int> itemSelecionado = new();
+    private Dictionary<int, decimal> QuantidadeSelecionado = new();
+
+    private void SelecionarItem(int produtoId, ChangeEventArgs e)
+    {
+        itemSelecionado[produtoId] = int.Parse(e.Value?.ToString() ?? "0");
+    }
+
+    private void Quantidadesele(int produtoId, ChangeEventArgs e)
+    {
+        decimal.TryParse(e.Value?.ToString(), out decimal quantidade);
+        QuantidadeSelecionado[produtoId] = quantidade;     
+    }
+
+	private List<ItemEstoque> ObterItensDisponiveis(int produtoId)
+	{
+		
+
+		tipoSelecionado.TryGetValue(produtoId, out string tipo);
+		if (tipo == "Filamento")
+		{
+			return filamentosDisponiveis.Cast<ItemEstoque>().ToList();
+		}
+		else if (tipo == "Insumo")
+		{
+			return insumosDisponiveis.Cast<ItemEstoque>().ToList();
+		}
+		return new List<ItemEstoque>();
+	}
+}

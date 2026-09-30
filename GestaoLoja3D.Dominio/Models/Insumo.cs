@@ -6,11 +6,16 @@ namespace GestaoLoja3D.Dominio.Models
 {
     public class Insumo : ItemEstoque
     {
-       
+
 
         public string Nome { get; private set; }
 
         public string UnidadeDeMedida { get; private set; }
+
+        public override string ObterDescricao()
+        {
+            return Nome;
+        }
 
         public Insumo(string nome, string unidadeDeMedida, decimal quantidade, decimal valorTotal)
             : base(quantidade, valorTotal)
@@ -19,5 +24,8 @@ namespace GestaoLoja3D.Dominio.Models
             UnidadeDeMedida = Validador.ValidarTexto(unidadeDeMedida, "Unidade de Medida");
         }
 
+        private Insumo() { }
+
     }
+
 }

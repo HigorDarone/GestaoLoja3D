@@ -1,4 +1,5 @@
 <Solution>
   <Project Path="GestaoLoja3D.Dominio/GestaoLoja3D.Dominio.csproj" />
+  <Project Path="GestaoLoja3D.TesteManual/GestaoLoja3D.TesteManual.csproj" Id="ada67d36-bfa7-4fbc-b5d6-a51b2c267f1c" />
   <Project Path="GestaoLoja3D/GestaoLoja3D.csproj" />
 </Solution>

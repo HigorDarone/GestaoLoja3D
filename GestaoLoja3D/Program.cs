@@ -1,10 +1,13 @@
 using GestaoLoja3D.Components;
+using GestaoLoja3D.Dominio.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+builder.Services.AddDbContext<AppDbContext>();
 
 var app = builder.Build();
 

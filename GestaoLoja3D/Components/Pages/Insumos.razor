@@ -1,0 +1,109 @@
+@page "/insumos"
+@rendermode InteractiveServer
+
+@using GestaoLoja3D.Dominio.Data
+@using GestaoLoja3D.Dominio.Models
+@using Microsoft.EntityFrameworkCore
+@inject AppDbContext DbContext
+
+<h1>Insumos</h1>
+
+<h3>Nova compra de insumo</h3>
+
+<form>
+    <div class="mb-2">
+        <label>Nome</label>
+        <input class="form-control" @bind="nome" />
+    </div>
+    <div class="mb-2">
+        <label>Unidade de Medida (ex: unidade, metro)</label>
+        <input class="form-control" @bind="unidadeDeMedida" />
+    </div>
+    <div class="mb-2">
+        <label>Quantidade Comprada</label>
+        <input class="form-control" step="0.01" @bind="quantidadeComprada" />
+    </div>
+    <div class="mb-2">
+        <label>Valor Total Pago (R$)</label>
+        <input class="form-control" step="0.01" @bind="valorTotalPago" />
+    </div>
+    <button class="btn btn-primary" type="button" @onclick="SalvarInsumo">Salvar</button>
+</form>
+@if (!string.IsNullOrEmpty(mensagemErro))
+{
+	<div class="alert alert-danger mt-2">@mensagemErro</div>
+}
+
+<hr />
+
+<h3>Insumos cadastrados</h3>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Nome</th>
+            <th>Unidade</th>
+            <th>Comprado</th>
+            <th>Disponível</th>
+            <th>Valor/Unidade</th>
+            <th>Data</th>
+        </tr>
+    </thead>
+    <tbody>
+		@foreach (var insumo in listaInsumos)
+		{
+			<tr>
+				<td>@insumo.Nome</td>
+				<td>@insumo.UnidadeDeMedida</td>
+				<td>@insumo.QuantidadeComprada</td>
+				<td>@insumo.QuantidadeDisponivel</td>
+				<td>R$ @insumo.ValorPorUnidade().ToString("F2")</td>
+				<td>@insumo.Data.ToString("dd/MM/yyyy")</td>
+			</tr>
+		}
+    </tbody>
+</table>
+
+@code
+{
+    string nome;
+    string unidadeDeMedida;
+    decimal quantidadeComprada;
+    decimal valorTotalPago;
+
+    string mensagemErro;
+
+
+    private List<Insumo> listaInsumos = new List<Insumo>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        listaInsumos = await DbContext.Insumos.ToListAsync();
+    }
+
+    private async Task SalvarInsumo()
+    {
+        try
+        {
+            mensagemErro = string.Empty;
+        
+            var novoInsumo = new Insumo(nome, unidadeDeMedida, quantidadeComprada, valorTotalPago);
+		
+		    DbContext.Insumos.Add(novoInsumo);
+		    await DbContext.SaveChangesAsync();
+		    // Atualiza a lista de insumos
+		    listaInsumos = await DbContext.Insumos.ToListAsync();
+		    // Limpa os campos do formulário
+		    nome = string.Empty;
+		    unidadeDeMedida = string.Empty;
+		    quantidadeComprada = 0;
+		    valorTotalPago = 0;
+        }
+        catch (ArgumentException ex)
+		{
+			mensagemErro = $"Erro ao salvar insumo: {ex.Message}";
+		}
+
+	}
+
+}

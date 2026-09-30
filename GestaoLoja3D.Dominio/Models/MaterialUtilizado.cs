@@ -18,5 +18,7 @@ namespace GestaoLoja3D.Dominio.Models
 
             material.ConsumirQuantidade(quantidadeUtilizada);
         }
+
+        private MaterialUtilizado() { }
     }
 }
