@@ -73,7 +73,16 @@
                 <input type="number" step="0.01" class="form-control" @onchange="e => Quantidadesele(produto.Id, e)" />
             </div>
             <div class="col-auto">
-                <button class="btn btn-secondary" type="button">Adicionar</button>
+                <label>Unidade</label>
+                <select class="form-select" @onchange="e => SelecionarUnidadeDeMedida(produto.Id, e)">
+					@foreach (var unidade in ObterUnidadeDeMedida(produto.Id))
+					{
+						<option value="@unidade.Value">@unidade.Key</option>
+					}
+                </select>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-secondary" type="button" @onclick="() => Adicionar(produto.Id)">Adicionar</button>
             </div>
         </div>
     </div>
@@ -126,6 +135,7 @@
     private Dictionary<int, string> tipoSelecionado = new();
     private Dictionary<int, int> itemSelecionado = new();
     private Dictionary<int, decimal> QuantidadeSelecionado = new();
+    private Dictionary<int, decimal> tipoDeMedida = new();
 
     private void SelecionarItem(int produtoId, ChangeEventArgs e)
     {
@@ -138,19 +148,95 @@
         QuantidadeSelecionado[produtoId] = quantidade;     
     }
 
-	private List<ItemEstoque> ObterItensDisponiveis(int produtoId)
-	{
-		
+    private List<ItemEstoque> ObterItensDisponiveis(int produtoId)
+    {
 
-		tipoSelecionado.TryGetValue(produtoId, out string tipo);
-		if (tipo == "Filamento")
+
+        tipoSelecionado.TryGetValue(produtoId, out string tipo);
+        if (tipo == "Filamento")
+        {
+            return filamentosDisponiveis.Cast<ItemEstoque>().ToList();
+        }
+        else if (tipo == "Insumo")
+        {
+            return insumosDisponiveis.Cast<ItemEstoque>().ToList();
+        }
+        return new List<ItemEstoque>();
+    }
+
+    private async Task Adicionar(int produtoId)
+    {
+        try
+        {
+            mensagemErro = string.Empty;
+
+            if (itemSelecionado.TryGetValue(produtoId, out int itemId) && itemId > 0 &&
+                QuantidadeSelecionado.TryGetValue(produtoId, out decimal quantidade) && quantidade > 0)
+            {
+                decimal teste = tipoDeMedida.GetValueOrDefault(produtoId, 1);
+                decimal conta = quantidade / teste;
+                var material = await DbContext.Filamentos.FindAsync(itemId) as ItemEstoque ?? await DbContext.Insumos.FindAsync(itemId) as ItemEstoque;
+                if (material != null)
+                {
+
+                    listaProdutos.FirstOrDefault(p => p.Id == produtoId)?.AdicionarMaterialUtilizado(material, conta);
+                    await DbContext.SaveChangesAsync();
+                }
+            }
+
+            listaProdutos = await DbContext.Produtos.Include(p => p.MateriaisUtilizados).ThenInclude(m => m.Material).ToListAsync();
+        }
+        catch (ArgumentException ex)
+        {
+            mensagemErro = $"Erro ao adicionar material: {ex.Message}";
+        }
+        catch (InvalidOperationException ex)
+        {
+            mensagemErro = $"Erro: {ex.Message}";
+        }
+    }
+
+    private void SelecionarUnidadeDeMedida(int produtoId, ChangeEventArgs e)
+    {
+        tipoDeMedida[produtoId] = decimal.Parse(e.Value?.ToString() ?? "0");
+    }
+
+    private Dictionary<string, decimal> ObterUnidadeDeMedida(int produtoId)
+    {
+        tipoSelecionado.TryGetValue(produtoId, out string tipo);
+        itemSelecionado.TryGetValue(produtoId, out int itemId);
+
+       
+        if (tipo == "Filamento")
+        {           
+            return new Dictionary<string, decimal> { { "KG", 1 }, { "G", 1000 } };
+        }
+        else if (tipo == "Insumo")
+        {
+            var insumo = insumosDisponiveis.FirstOrDefault(i => i.Id == itemId);
+
+			if (insumo != null && insumo.UnidadeDeMedida == "Metros")
+			{
+				return new Dictionary<string, decimal> { { "Cm", 100 }, { "Metros", 1 } };
+			}
+			else if (insumo != null && insumo.UnidadeDeMedida == "Centímetros")
+			{
+				return new Dictionary<string, decimal> { { "Cm", 1 }};
+			}
+			else if (insumo != null && insumo.UnidadeDeMedida == "Unidades")
+			{
+				return new Dictionary<string, decimal> { { "Un", 1 } };
+			}
+			else
+			{
+				return new Dictionary<string, decimal>();
+			}
+            
+           
+        }
+        else
 		{
-			return filamentosDisponiveis.Cast<ItemEstoque>().ToList();
-		}
-		else if (tipo == "Insumo")
-		{
-			return insumosDisponiveis.Cast<ItemEstoque>().ToList();
-		}
-		return new List<ItemEstoque>();
-	}
+			return new Dictionary<string, decimal>();
+        }
+    }
 }
