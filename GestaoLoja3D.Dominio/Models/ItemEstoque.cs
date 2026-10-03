@@ -31,6 +31,12 @@ namespace GestaoLoja3D.Dominio.Models
             return QuantidadeDisponivel;
         }
 
+        public decimal DevolverQuantidade(decimal quantidadeDevolvida)
+        {
+            QuantidadeDisponivel += quantidadeDevolvida;
+            return QuantidadeDisponivel;
+        }
+
         public decimal ValorPorUnidade()
         {
             if (QuantidadeComprada <= 0)

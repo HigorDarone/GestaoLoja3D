@@ -41,6 +41,22 @@ namespace GestaoLoja3D.Dominio.Models
             materiaisUtilizados.Add(materialUtilizado);
         }
 
+        public void RemoverMaterialUtilizado(int materialUtilizadoId)
+        {
+            var materialremover = materiaisUtilizados.FirstOrDefault(m => m.Id == materialUtilizadoId);
+
+            if (materialremover == null)
+            {
+                return;
+            }
+            else
+            {
+                materialremover.Material.DevolverQuantidade(materialremover.QuantidadeUtilizada);
+                materiaisUtilizados.Remove(materialremover);
+            }
+
+        }
+
         public Produto(string nome, TimeSpan tempoProducao, int quantidadeEstoque)
         {
             Nome = Validador.ValidarTexto(nome, "Nome");

@@ -44,7 +44,8 @@
         <ul>
             @foreach (var material in produto.MateriaisUtilizados)
             {
-                <li>@material.Material.ObterDescricao() - Quantidade: @material.QuantidadeUtilizada - Custo: @((material.Material.ValorPorUnidade() * material.QuantidadeUtilizada).ToString("C"))</li>
+                <li>@material.Material.ObterDescricao() - Quantidade: @material.QuantidadeUtilizada.ToString("0.##") - Custo: @((material.Material.ValorPorUnidade() * material.QuantidadeUtilizada).ToString("C"))</li>
+                <button class="btn btn-sm btn-outline-danger ms-2" type="button" @onclick="() => RemoverMaterial(produto.Id, material.Id)">X</button>
             }
         </ul>
         <h6>Adicionar material</h6>
@@ -64,7 +65,7 @@
                     <option value="0">Selecione...</option>
                     @foreach (var item in ObterItensDisponiveis(produto.Id))
                     {
-                        <option value="@item.Id">@item.ObterDescricao() (@item.QuantidadeDisponivel disponível)</option>
+                        <option value="@item.Id">@item.ObterDescricao() (@item.QuantidadeDisponivel.ToString("0.##") disponível)</option>
                     }
                 </select>
             </div>
@@ -196,6 +197,25 @@
         }
     }
 
+	private async Task RemoverMaterial(int produtoId, int materialId)
+	{
+		try
+		{
+			mensagemErro = string.Empty;
+			var produto = await DbContext.Produtos.Include(p => p.MateriaisUtilizados).ThenInclude(m => m.Material).FirstOrDefaultAsync(p => p.Id == produtoId);
+			if (produto != null)
+			{
+				produto.RemoverMaterialUtilizado(materialId);
+				await DbContext.SaveChangesAsync();
+			}
+			listaProdutos = await DbContext.Produtos.Include(p => p.MateriaisUtilizados).ThenInclude(m => m.Material).ToListAsync();
+		}
+		catch (ArgumentException ex)
+		{
+			mensagemErro = $"Erro ao remover material: {ex.Message}";
+		}
+	}
+    
     private void SelecionarUnidadeDeMedida(int produtoId, ChangeEventArgs e)
     {
         tipoDeMedida[produtoId] = decimal.Parse(e.Value?.ToString() ?? "0");
