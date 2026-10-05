@@ -56,6 +56,16 @@ namespace GestaoLoja3D.Dominio.Models
             }
 
         }
+        public void RemoverTodosMateriais()
+        {
+            var listamateriais = materiaisUtilizados.ToList();
+            
+                foreach(var materiais in listamateriais)
+                {
+                    materiais.Material.DevolverQuantidade(materiais.QuantidadeUtilizada);
+                    materiaisUtilizados.Remove(materiais);
+                }           
+        }
 
         public Produto(string nome, TimeSpan tempoProducao, int quantidadeEstoque)
         {

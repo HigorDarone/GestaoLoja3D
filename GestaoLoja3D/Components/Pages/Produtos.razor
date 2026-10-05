@@ -38,6 +38,11 @@
 {
     <div class="card mb-3 p-3">
         <h4>@produto.Nome</h4>
+        <button class="btn btn-sm btn-outline-danger" type="button"
+                title="Excluir produto e devolver os materiais ao estoque"
+                @onclick="() => RemoverProduto(produto.Id)">
+            Excluir produto
+        </button>
         <p>Tempo de produção: @produto.TempoProducao | Estoque: @produto.QuantidadeEstoque</p>
         <p><strong>Valor total de fabricação: R$ @produto.ValorTotalDeFabricao().ToString("F2")</strong></p>
         <h5>Materiais utilizados</h5>
@@ -52,7 +57,7 @@
         <div class="row g-2 align-items-end">
             <div class="col-auto">
                 <label>Tipo</label>
-                <select class="form-select" @onchange="e => tipoSelecionado[produto.Id] = e.Value?.ToString() ?? string.Empty">
+                <select class="form-select" @onchange="e => SelecionarTipo(produto.Id, e)">
                     <option value="">Selecione...</option>
                     <option value="Filamento">Filamento</option>
                     <option value="Insumo">Insumo</option>                  
@@ -71,11 +76,11 @@
             </div>
             <div class="col-auto">
                 <label>Quantidade usada</label>
-                <input type="number" step="0.01" class="form-control" @onchange="e => Quantidadesele(produto.Id, e)" />
+                <input type="number" step="0.01" class="form-control" value="@QuantidadeSelecionado.GetValueOrDefault(produto.Id)" @onchange="e => Quantidadesele(produto.Id, e)" />
             </div>
             <div class="col-auto">
                 <label>Unidade</label>
-                <select class="form-select" @onchange="e => SelecionarUnidadeDeMedida(produto.Id, e)">
+                <select class="form-select" value="@tipoDeMedida.GetValueOrDefault(produto.Id, 1)" @onchange="e => SelecionarUnidadeDeMedida(produto.Id, e)">
 					@foreach (var unidade in ObterUnidadeDeMedida(produto.Id))
 					{
 						<option value="@unidade.Value">@unidade.Key</option>
@@ -141,6 +146,7 @@
     private void SelecionarItem(int produtoId, ChangeEventArgs e)
     {
         itemSelecionado[produtoId] = int.Parse(e.Value?.ToString() ?? "0");
+        tipoDeMedida.Remove(produtoId);
     }
 
     private void Quantidadesele(int produtoId, ChangeEventArgs e)
@@ -197,28 +203,65 @@
         }
     }
 
-	private async Task RemoverMaterial(int produtoId, int materialId)
-	{
-		try
-		{
-			mensagemErro = string.Empty;
-			var produto = await DbContext.Produtos.Include(p => p.MateriaisUtilizados).ThenInclude(m => m.Material).FirstOrDefaultAsync(p => p.Id == produtoId);
-			if (produto != null)
-			{
-				produto.RemoverMaterialUtilizado(materialId);
-				await DbContext.SaveChangesAsync();
-			}
-			listaProdutos = await DbContext.Produtos.Include(p => p.MateriaisUtilizados).ThenInclude(m => m.Material).ToListAsync();
-		}
-		catch (ArgumentException ex)
-		{
-			mensagemErro = $"Erro ao remover material: {ex.Message}";
-		}
-	}
-    
+    private async Task RemoverMaterial(int produtoId, int materialId)
+    {
+        try
+        {
+            mensagemErro = string.Empty;
+            var produto = await DbContext.Produtos.Include(p => p.MateriaisUtilizados).ThenInclude(m => m.Material).FirstOrDefaultAsync(p => p.Id == produtoId);
+            if (produto != null)
+            {
+                var materiais = produto.MateriaisUtilizados.FirstOrDefault(m => m.Id == materialId);
+                produto.RemoverMaterialUtilizado(materialId);
+                DbContext.Remove(materiais);
+                await DbContext.SaveChangesAsync();
+            }
+            listaProdutos = await DbContext.Produtos.Include(p => p.MateriaisUtilizados).ThenInclude(m => m.Material).ToListAsync();
+        }
+        catch (ArgumentException ex)
+        {
+            mensagemErro = $"Erro ao remover material: {ex.Message}";
+        }
+    }
+
+    private async Task RemoverProduto(int produtoId)
+    {
+        try
+        {
+            mensagemErro = string.Empty;
+            var produto = await DbContext.Produtos.Include(p => p.MateriaisUtilizados).ThenInclude(m => m.Material).FirstOrDefaultAsync(p => p.Id == produtoId);
+            if (produto != null)
+            {
+                var materiais = produto.MateriaisUtilizados;
+                produto.RemoverTodosMateriais();
+                DbContext.RemoveRange(materiais);
+                DbContext.Remove(produto);
+                await DbContext.SaveChangesAsync();
+            }
+            listaProdutos = await DbContext.Produtos.Include(p => p.MateriaisUtilizados).ThenInclude(m => m.Material).ToListAsync();
+        }
+        catch (ArgumentException ex)
+        {
+            mensagemErro = $"Erro ao remover Produto: {ex.Message}";
+        }
+    }
+
     private void SelecionarUnidadeDeMedida(int produtoId, ChangeEventArgs e)
     {
         tipoDeMedida[produtoId] = decimal.Parse(e.Value?.ToString() ?? "0");
+    }
+
+    private void SelecionarTipo(int produtoId, ChangeEventArgs e)
+    {
+        tipoSelecionado[produtoId] = e.Value?.ToString() ?? string.Empty;
+
+        LimparSelecao(produtoId);
+    }
+
+    private void LimparSelecao(int produtoId)
+    {
+        itemSelecionado.Remove(produtoId);
+        tipoDeMedida.Remove(produtoId);
     }
 
     private Dictionary<string, decimal> ObterUnidadeDeMedida(int produtoId)
