@@ -16,11 +16,18 @@ Diferente do projeto anterior (livraria, um exercício de aprendizado), esse pro
 **Já em uso:**
 - C# / .NET 10
 - Blazor Web App (Interactive Server)
-- Entity Framework Core (persistência — a definir provider)
+- Entity Framework Core com MySQL (Pomelo), mapeamento Table-Per-Hierarchy para `Filamento`/`Insumo`
 
 **Planejadas:**
 - Integração com IA (a definir provedor/API) para o módulo de apoio a avaliações
-- xUnit para testes da camada de domínio
+
+## Funcionalidades já implementadas
+
+- Cadastro e listagem de remessas de filamento e de insumos, com valor por unidade calculado.
+- Cadastro de produtos com tempo de produção e estoque.
+- Adição de materiais (filamento/insumo) a um produto, com conversão de unidade (kg/g, metros/cm) e desconto automático do estoque.
+- Cálculo do custo total de fabricação de cada produto.
+- Exclusão de material ou de produto inteiro, devolvendo a quantidade usada ao estoque.
 
 ## Estrutura do projeto
 

@@ -36,13 +36,14 @@
 <h3>Produtos cadastrados</h3>
 @foreach (var produto in listaProdutos)
 {
-    <div class="card mb-3 p-3">
-        <h4>@produto.Nome</h4>
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h4 class="mb-0">@produto.Nome</h4>
         <button class="btn btn-sm btn-outline-danger" type="button"
                 title="Excluir produto e devolver os materiais ao estoque"
                 @onclick="() => RemoverProduto(produto.Id)">
             Excluir produto
         </button>
+    </div>
         <p>Tempo de produção: @produto.TempoProducao | Estoque: @produto.QuantidadeEstoque</p>
         <p><strong>Valor total de fabricação: R$ @produto.ValorTotalDeFabricao().ToString("F2")</strong></p>
         <h5>Materiais utilizados</h5>
@@ -91,7 +92,7 @@
                 <button class="btn btn-secondary" type="button" @onclick="() => Adicionar(produto.Id)">Adicionar</button>
             </div>
         </div>
-    </div>
+    
 }
 @code
 {
@@ -211,10 +212,18 @@
             var produto = await DbContext.Produtos.Include(p => p.MateriaisUtilizados).ThenInclude(m => m.Material).FirstOrDefaultAsync(p => p.Id == produtoId);
             if (produto != null)
             {
-                var materiais = produto.MateriaisUtilizados.FirstOrDefault(m => m.Id == materialId);
-                produto.RemoverMaterialUtilizado(materialId);
-                DbContext.Remove(materiais);
-                await DbContext.SaveChangesAsync();
+                var material = produto.MateriaisUtilizados.FirstOrDefault(m => m.Id == materialId);
+                if (material != null)
+                {
+                    produto.RemoverMaterialUtilizado(materialId);
+                    DbContext.Remove(material);
+                    await DbContext.SaveChangesAsync();
+                }
+                else
+                {
+					mensagemErro = "Material não encontrado para remoção.";
+
+                }
             }
             listaProdutos = await DbContext.Produtos.Include(p => p.MateriaisUtilizados).ThenInclude(m => m.Material).ToListAsync();
         }
